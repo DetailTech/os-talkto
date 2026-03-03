@@ -1,4 +1,5 @@
 import { chunkText, createEmbedding } from "@/lib/rag";
+import { safeFetch } from "@/lib/security/safe-fetch";
 
 const ITUNES_SEARCH_URL = "https://itunes.apple.com/search";
 const ITUNES_LOOKUP_URL = "https://itunes.apple.com/lookup";
@@ -116,7 +117,7 @@ function parseAppleEpisodeId(url: string): string | undefined {
 }
 
 async function fetchJson<T>(url: string): Promise<T> {
-  const response = await fetch(url, { cache: "no-store" });
+  const response = await safeFetch(url, { cache: "no-store" });
   if (!response.ok) {
     throw new Error(`Fetch failed (${response.status}) for ${url}`);
   }
@@ -154,7 +155,7 @@ async function lookupPodcastFromAppleEpisode(episodeId: string): Promise<Podcast
 }
 
 async function fetchFeedEpisodes(feedUrl: string): Promise<EpisodeCandidate[]> {
-  const response = await fetch(feedUrl, { cache: "no-store" });
+  const response = await safeFetch(feedUrl, { cache: "no-store" });
   if (!response.ok) {
     throw new Error(`Feed fetch failed (${response.status})`);
   }
@@ -212,7 +213,7 @@ function flattenJsonText(value: unknown, output: string[] = []): string[] {
 }
 
 async function fetchTranscriptFromUrl(url: string): Promise<string | null> {
-  const response = await fetch(url, { cache: "no-store" });
+  const response = await safeFetch(url, { cache: "no-store" });
   if (!response.ok) return null;
 
   const contentType = (response.headers.get("content-type") || "").toLowerCase();
@@ -241,7 +242,7 @@ async function fetchTranscriptFromUrl(url: string): Promise<string | null> {
 
 async function maybeFindTranscriptFromEpisodePage(url?: string): Promise<string | null> {
   if (!url) return null;
-  const response = await fetch(url, { cache: "no-store" });
+  const response = await safeFetch(url, { cache: "no-store" });
   if (!response.ok) return null;
 
   const html = await response.text();
@@ -268,13 +269,13 @@ async function maybeFindTranscriptFromEpisodePage(url?: string): Promise<string 
 }
 
 async function transcribeAudioEpisode(audioUrl: string, apiKey: string): Promise<string | null> {
-  const head = await fetch(audioUrl, { method: "HEAD", cache: "no-store" });
+  const head = await safeFetch(audioUrl, { method: "HEAD", cache: "no-store" });
   const contentLength = Number(head.headers.get("content-length") || "0");
   if (contentLength > MAX_AUDIO_BYTES) {
     return null;
   }
 
-  const audioResponse = await fetch(audioUrl, { cache: "no-store" });
+  const audioResponse = await safeFetch(audioUrl, { cache: "no-store" });
   if (!audioResponse.ok) return null;
 
   const audioBuffer = await audioResponse.arrayBuffer();

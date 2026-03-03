@@ -60,6 +60,20 @@ export async function POST(request: Request) {
     const user = await getCurrentUser();
     if (!user) return Response.json({ error: "Unauthorized" }, { status: 401 });
 
+    const existingJobs = await listOraclePersonaIngestJobs(user.id);
+    const activeCount = existingJobs.filter(
+      (job) => job.status === "queued" || job.status === "running"
+    ).length;
+    const maxActiveJobs = Number(process.env.PERSONA_INGEST_MAX_ACTIVE_JOBS || "3");
+    if (activeCount >= maxActiveJobs) {
+      return Response.json(
+        {
+          error: `Too many active ingest jobs (${activeCount}). Wait for jobs to finish.`,
+        },
+        { status: 429 }
+      );
+    }
+
     const body = (await request.json()) as {
       name?: string;
       sources?: unknown;
@@ -108,7 +122,7 @@ export async function POST(request: Request) {
 
     return Response.json({ persona, job });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Failed to start persona ingestion";
-    return Response.json({ error: message }, { status: 500 });
+    console.error("Persona ingest create error:", error);
+    return Response.json({ error: "Failed to start persona ingestion" }, { status: 500 });
   }
 }

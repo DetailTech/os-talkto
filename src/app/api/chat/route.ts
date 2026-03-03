@@ -265,7 +265,6 @@ ${groupInstruction}`;
     return Response.json({ responses: groupResponses });
   } catch (error) {
     console.error("Chat API error:", error);
-    const message = error instanceof Error ? error.message : "Internal server error";
-    return Response.json({ error: message }, { status: 500 });
+    return Response.json({ error: "Internal server error" }, { status: 500 });
   }
 }

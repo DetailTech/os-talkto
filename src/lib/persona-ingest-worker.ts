@@ -3,6 +3,7 @@ import { generateText } from "ai";
 import { createEmbedding, chunkText } from "@/lib/rag";
 import { decrypt } from "@/lib/encryption";
 import { getLanguageModel } from "@/lib/ai-providers";
+import { safeFetch } from "@/lib/security/safe-fetch";
 import {
   getOraclePersonaById,
   getOraclePersonaIngestJobById,
@@ -135,7 +136,7 @@ function parseTagAttribute(item: string, tagName: string, attribute: string): st
 }
 
 async function fetchJson<T>(url: string): Promise<T> {
-  const response = await fetch(url, { cache: "no-store" });
+  const response = await safeFetch(url, { cache: "no-store" });
   if (!response.ok) throw new Error(`Fetch failed (${response.status}) for ${url}`);
   return response.json() as Promise<T>;
 }
@@ -150,7 +151,7 @@ function scoreBookMatch(queryTokens: string[], title: string, authors: string[])
 
 async function fetchBookTextFromUrl(url: string): Promise<string | null> {
   if (!/^https?:\/\//i.test(url)) return null;
-  const response = await fetch(url, { cache: "no-store" });
+  const response = await safeFetch(url, { cache: "no-store" });
   if (!response.ok) return null;
 
   const contentType = response.headers.get("content-type") || "";
@@ -301,7 +302,7 @@ async function crawlForTranscript(
 
     if (next.depth >= maxDepth) continue;
 
-    const response = await fetch(next.url, { cache: "no-store" });
+    const response = await safeFetch(next.url, { cache: "no-store" });
     if (!response.ok) continue;
     const html = await response.text();
     const links = extractLinksFromHtml(next.url, html);
@@ -330,7 +331,7 @@ async function crawlForTranscript(
 
 async function maybeFindTranscriptFromEpisodePage(url?: string): Promise<string | null> {
   if (!url) return null;
-  const response = await fetch(url, { cache: "no-store" });
+  const response = await safeFetch(url, { cache: "no-store" });
   if (!response.ok) return null;
   const html = await response.text();
 
@@ -362,7 +363,7 @@ async function maybeFindTranscriptFromEpisodePage(url?: string): Promise<string 
 }
 
 async function searchTranscriptUrls(query: string, limit: number = 6): Promise<string[]> {
-  const response = await fetch(
+  const response = await safeFetch(
     `https://duckduckgo.com/html/?q=${encodeURIComponent(query)}`,
     { cache: "no-store" }
   );
@@ -397,7 +398,7 @@ async function findTranscriptViaWebSearch(query: string): Promise<string | null>
 }
 
 async function fetchTranscriptFromUrl(url: string): Promise<string | null> {
-  const response = await fetch(url, { cache: "no-store" });
+  const response = await safeFetch(url, { cache: "no-store" });
   if (!response.ok) return null;
   const text = await response.text();
   if (!text.trim()) return null;
@@ -508,7 +509,7 @@ function parseMetaContent(html: string, key: string): string {
 
 async function fetchWebProfileSource(url: string): Promise<WebProfileSource | null> {
   if (!isCrawlableLink(url)) return null;
-  const response = await fetch(url, { cache: "no-store" });
+  const response = await safeFetch(url, { cache: "no-store" });
   if (!response.ok) return null;
   const html = await response.text();
   const title =
@@ -553,7 +554,7 @@ async function collectWebProfileSources(query: string): Promise<WebProfileSource
 }
 
 async function findWikipediaImageForName(name: string): Promise<string | null> {
-  const response = await fetch(
+  const response = await safeFetch(
     `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(name)}`,
     { cache: "no-store", headers: { Accept: "application/json" } }
   );
@@ -795,7 +796,7 @@ export async function discoverPersonaSources(
   }
 
   if (sources.youtube) {
-    const response = await fetch(
+    const response = await safeFetch(
       `https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`,
       { cache: "no-store" }
     );
@@ -824,7 +825,7 @@ export async function discoverPersonaSources(
   }
 
   if (sources.blogs) {
-    const response = await fetch(
+    const response = await safeFetch(
       `https://duckduckgo.com/html/?q=${encodeURIComponent(`${query} blog`)}`,
       { cache: "no-store" }
     );
@@ -1165,7 +1166,7 @@ async function candidateToDocuments(candidate: PersonaSourceCandidate): Promise<
 
   if (candidate.type === "podcast" && candidate.url) {
     const docs: TextSourceDocument[] = [];
-    const feedResponse = await fetch(candidate.url, { cache: "no-store" });
+    const feedResponse = await safeFetch(candidate.url, { cache: "no-store" });
     if (!feedResponse.ok) return docs;
     const feedXml = await feedResponse.text();
     const episodes = parseFeedItems(feedXml).slice(0, 80);
@@ -1247,7 +1248,7 @@ async function candidateToDocuments(candidate: PersonaSourceCandidate): Promise<
     if (!videoId) return [];
 
     const listUrl = `https://video.google.com/timedtext?type=list&v=${encodeURIComponent(videoId)}`;
-    const listResponse = await fetch(listUrl, { cache: "no-store" });
+    const listResponse = await safeFetch(listUrl, { cache: "no-store" });
     let content = "";
     if (listResponse.ok) {
       const listXml = await listResponse.text();
@@ -1255,7 +1256,7 @@ async function candidateToDocuments(candidate: PersonaSourceCandidate): Promise<
       if (langMatch?.[1]) {
         const transcriptUrl =
           `https://video.google.com/timedtext?v=${encodeURIComponent(videoId)}&lang=${encodeURIComponent(langMatch[1])}`;
-        const transcriptResponse = await fetch(transcriptUrl, { cache: "no-store" });
+        const transcriptResponse = await safeFetch(transcriptUrl, { cache: "no-store" });
         if (transcriptResponse.ok) {
           const transcriptXml = await transcriptResponse.text();
           const lines = [...transcriptXml.matchAll(/<text[^>]*>([\s\S]*?)<\/text>/g)].map((m) =>
@@ -1284,7 +1285,7 @@ async function candidateToDocuments(candidate: PersonaSourceCandidate): Promise<
   }
 
   if (candidate.type === "blog" && candidate.url) {
-    const response = await fetch(candidate.url, { cache: "no-store" });
+    const response = await safeFetch(candidate.url, { cache: "no-store" });
     if (!response.ok) return [];
     const html = await response.text();
     const content = stripHtml(html);

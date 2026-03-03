@@ -18,10 +18,11 @@ ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV PORT=3000
 ENV HOSTNAME=0.0.0.0
+ENV APP_INTERNAL_PORT=3001
 
 # Runtime dependencies for oracledb thin mode over TLS
 RUN apt-get update \
-  && apt-get install -y --no-install-recommends ca-certificates \
+  && apt-get install -y --no-install-recommends ca-certificates openssl \
   && rm -rf /var/lib/apt/lists/*
 
 RUN addgroup --system --gid 1001 nodejs \
@@ -30,6 +31,8 @@ RUN addgroup --system --gid 1001 nodejs \
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
+COPY --from=builder /app/tls-proxy.mjs ./tls-proxy.mjs
+COPY --from=builder /app/docker-entrypoint.sh ./docker-entrypoint.sh
 
 # Local auth/auth-config data directory
 RUN mkdir -p /app/.data && chown -R nextjs:nodejs /app
@@ -37,4 +40,4 @@ RUN mkdir -p /app/.data && chown -R nextjs:nodejs /app
 USER nextjs
 EXPOSE 3000
 
-CMD ["node", "server.js"]
+ENTRYPOINT ["./docker-entrypoint.sh"]

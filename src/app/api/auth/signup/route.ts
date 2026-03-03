@@ -2,9 +2,33 @@ import { NextResponse } from "next/server";
 import { createUser, listUsers } from "@/lib/auth/local-users";
 import { createSessionToken, SESSION_COOKIE } from "@/lib/auth/session";
 import { ensureDefaultUserSettings } from "@/lib/db/user-settings";
+import { sessionCookieOptions } from "@/lib/security/cookie-options";
+import { getClientIp } from "@/lib/security/http";
+import { checkRateLimit } from "@/lib/security/rate-limit";
 
 export async function POST(request: Request) {
   try {
+    const allowSignup = (process.env.ALLOW_SIGNUP || "").toLowerCase() === "true";
+    if (!allowSignup) {
+      return NextResponse.json({ error: "Signup is disabled" }, { status: 403 });
+    }
+
+    const ip = getClientIp(request);
+    const signupLimit = checkRateLimit({
+      key: `auth:signup:ip:${ip}`,
+      windowMs: 60_000,
+      maxRequests: 8,
+    });
+    if (!signupLimit.allowed) {
+      return NextResponse.json(
+        { error: "Too many signup attempts. Try again shortly." },
+        {
+          status: 429,
+          headers: { "Retry-After": String(signupLimit.retryAfterSeconds) },
+        }
+      );
+    }
+
     const { email, password } = await request.json();
     if (!email || !password) {
       return NextResponse.json({ error: "Email and password are required" }, { status: 400 });
@@ -25,17 +49,11 @@ export async function POST(request: Request) {
     });
 
     const response = NextResponse.json({ success: true, role: user.role });
-    response.cookies.set(SESSION_COOKIE, token, {
-      httpOnly: true,
-      sameSite: "lax",
-      secure: process.env.NODE_ENV === "production",
-      path: "/",
-      maxAge: 60 * 60 * 24 * 7,
-    });
+    response.cookies.set(SESSION_COOKIE, token, sessionCookieOptions(60 * 60 * 24 * 7));
 
     return response;
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Signup failed";
-    return NextResponse.json({ error: message }, { status: 500 });
+    console.error("Signup API error", error);
+    return NextResponse.json({ error: "Signup failed" }, { status: 500 });
   }
 }

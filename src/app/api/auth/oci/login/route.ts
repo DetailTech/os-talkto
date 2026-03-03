@@ -7,6 +7,7 @@ import {
   createState,
   fetchOidcDiscovery,
 } from "@/lib/auth/oidc";
+import { isSecureCookie } from "@/lib/security/cookie-options";
 
 const OIDC_STATE_COOKIE = "talkto_oidc_state";
 const OIDC_VERIFIER_COOKIE = "talkto_oidc_verifier";
@@ -45,7 +46,7 @@ export async function GET(request: NextRequest) {
   const cookieOptions = {
     httpOnly: true,
     sameSite: "lax" as const,
-    secure: process.env.NODE_ENV === "production",
+    secure: isSecureCookie(),
     path: "/",
     maxAge: 60 * 10,
   };

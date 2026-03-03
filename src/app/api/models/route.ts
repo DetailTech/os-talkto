@@ -11,9 +11,11 @@ interface ModelOption {
 
 class UpstreamError extends Error {
   status: number;
-  constructor(message: string, status: number) {
+  publicMessage: string;
+  constructor(message: string, status: number, publicMessage: string) {
     super(message);
     this.status = status;
+    this.publicMessage = publicMessage;
   }
 }
 
@@ -44,7 +46,11 @@ async function listOpenAIModels(apiKey: string): Promise<ModelOption[]> {
   });
   if (!response.ok) {
     const details = await readErrorBody(response);
-    throw new UpstreamError(`OpenAI model fetch failed: ${details || response.statusText}`, response.status);
+    throw new UpstreamError(
+      `OpenAI model fetch failed: ${details || response.statusText}`,
+      response.status,
+      "Failed to fetch models from provider"
+    );
   }
   const data = (await response.json()) as { data?: Array<{ id: string }> };
   const models = (data.data || [])
@@ -60,7 +66,11 @@ async function listGoogleModels(apiKey: string): Promise<ModelOption[]> {
   );
   if (!response.ok) {
     const details = await readErrorBody(response);
-    throw new UpstreamError(`Google model fetch failed: ${details || response.statusText}`, response.status);
+    throw new UpstreamError(
+      `Google model fetch failed: ${details || response.statusText}`,
+      response.status,
+      "Failed to fetch models from provider"
+    );
   }
   const data = (await response.json()) as {
     models?: Array<{ name: string; displayName?: string; supportedGenerationMethods?: string[] }>;
@@ -86,7 +96,8 @@ async function listOpenRouterModels(apiKey: string): Promise<ModelOption[]> {
     const details = await readErrorBody(response);
     throw new UpstreamError(
       `OpenRouter model fetch failed: ${details || response.statusText}`,
-      response.status
+      response.status,
+      "Failed to fetch models from provider"
     );
   }
   const data = (await response.json()) as {
@@ -133,8 +144,13 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ models });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Failed to fetch models";
+    if (error instanceof UpstreamError) {
+      console.error("Models API upstream error:", error.message);
+      return NextResponse.json({ error: error.publicMessage }, { status: error.status });
+    }
+
+    console.error("Models API error:", error);
     const status = error instanceof UpstreamError ? error.status : 500;
-    return NextResponse.json({ error: message }, { status });
+    return NextResponse.json({ error: "Failed to fetch models" }, { status });
   }
 }

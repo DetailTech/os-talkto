@@ -10,6 +10,7 @@ export async function POST(request: Request, context: RouteContext) {
   try {
     const user = await getCurrentUser();
     if (!user) return Response.json({ error: "Unauthorized" }, { status: 401 });
+    if (user.role !== "admin") return Response.json({ error: "Forbidden" }, { status: 403 });
 
     const { personaId } = await context.params;
     if (!personaId) return Response.json({ error: "personaId is required" }, { status: 400 });

@@ -8,6 +8,7 @@ import {
 import { createSessionToken, SESSION_COOKIE } from "@/lib/auth/session";
 import { upsertOidcUser } from "@/lib/auth/local-users";
 import { ensureDefaultUserSettings } from "@/lib/db/user-settings";
+import { isSecureCookie, sessionCookieOptions } from "@/lib/security/cookie-options";
 
 const OIDC_STATE_COOKIE = "talkto_oidc_state";
 const OIDC_VERIFIER_COOKIE = "talkto_oidc_verifier";
@@ -17,7 +18,7 @@ function clearOidcCookies(response: NextResponse) {
   const base = {
     httpOnly: true,
     sameSite: "lax" as const,
-    secure: process.env.NODE_ENV === "production",
+    secure: isSecureCookie(),
     path: "/",
     maxAge: 0,
   };
@@ -85,13 +86,7 @@ export async function GET(request: NextRequest) {
     });
 
     const response = NextResponse.redirect(`${origin}/`);
-    response.cookies.set(SESSION_COOKIE, token, {
-      httpOnly: true,
-      sameSite: "lax",
-      secure: process.env.NODE_ENV === "production",
-      path: "/",
-      maxAge: 60 * 60 * 24 * 7,
-    });
+    response.cookies.set(SESSION_COOKIE, token, sessionCookieOptions(60 * 60 * 24 * 7));
     clearOidcCookies(response);
     return response;
   } catch (error) {

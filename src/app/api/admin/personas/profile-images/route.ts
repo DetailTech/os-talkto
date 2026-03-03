@@ -3,6 +3,7 @@ import {
   listOraclePersonasMissingImage,
   updateOraclePersonaImageUrl,
 } from "@/lib/db/oracle";
+import { safeFetch } from "@/lib/security/safe-fetch";
 
 interface WebProfileSource {
   url: string;
@@ -76,7 +77,7 @@ function parseMetaContent(html: string, key: string): string {
 }
 
 async function searchUrls(query: string, limit: number = 10): Promise<string[]> {
-  const response = await fetch(
+  const response = await safeFetch(
     `https://duckduckgo.com/html/?q=${encodeURIComponent(query)}`,
     { cache: "no-store" }
   );
@@ -101,7 +102,7 @@ async function searchUrls(query: string, limit: number = 10): Promise<string[]> 
 
 async function fetchWebProfileSource(url: string): Promise<WebProfileSource | null> {
   if (!/^https?:\/\//i.test(url)) return null;
-  const response = await fetch(url, { cache: "no-store" });
+  const response = await safeFetch(url, { cache: "no-store" });
   if (!response.ok) return null;
   const html = await response.text();
   const title =
@@ -163,7 +164,7 @@ async function findWikipediaImage(personaName: string): Promise<string | null> {
   const searchUrl =
     `https://en.wikipedia.org/w/api.php?action=query&list=search&format=json&utf8=1` +
     `&srlimit=8&srsearch=${encodeURIComponent(personaName)}`;
-  const searchResponse = await fetch(searchUrl, { cache: "no-store" });
+  const searchResponse = await safeFetch(searchUrl, { cache: "no-store" });
   if (!searchResponse.ok) return null;
   const searchPayload = (await searchResponse.json()) as {
     query?: { search?: Array<{ title?: string; snippet?: string }> };
@@ -184,7 +185,7 @@ async function findWikipediaImage(personaName: string): Promise<string | null> {
   if (titles.length === 0) return null;
 
   for (const pickedTitle of titles) {
-    const summaryResponse = await fetch(
+    const summaryResponse = await safeFetch(
       `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(pickedTitle)}`,
       { cache: "no-store", headers: { Accept: "application/json" } }
     ).catch(() => null);
@@ -210,7 +211,7 @@ async function findWikipediaImage(personaName: string): Promise<string | null> {
   const pageUrl =
     `https://en.wikipedia.org/w/api.php?action=query&format=json&prop=pageimages` +
     `&pithumbsize=1000&titles=${encodeURIComponent(titles.join("|"))}`;
-  const pageResponse = await fetch(pageUrl, { cache: "no-store" });
+  const pageResponse = await safeFetch(pageUrl, { cache: "no-store" });
   if (!pageResponse.ok) return null;
   const pagePayload = (await pageResponse.json()) as {
     query?: { pages?: Record<string, { title?: string; thumbnail?: { source?: string } }> };
@@ -235,7 +236,7 @@ async function findWikidataImage(personaName: string): Promise<string | null> {
   const url =
     `https://www.wikidata.org/w/api.php?action=wbsearchentities&format=json&language=en` +
     `&type=item&limit=10&search=${encodeURIComponent(personaName)}`;
-  const response = await fetch(url, { cache: "no-store" });
+  const response = await safeFetch(url, { cache: "no-store" });
   if (!response.ok) return null;
   const payload = (await response.json()) as {
     search?: Array<{ id?: string; label?: string; description?: string }>;
@@ -253,7 +254,7 @@ async function findWikidataImage(personaName: string): Promise<string | null> {
     .slice(0, 5);
 
   for (const candidate of candidates) {
-    const entityResponse = await fetch(
+    const entityResponse = await safeFetch(
       `https://www.wikidata.org/wiki/Special:EntityData/${encodeURIComponent(candidate.id)}.json`,
       { cache: "no-store" }
     );
@@ -288,7 +289,7 @@ async function findWikidataImage(personaName: string): Promise<string | null> {
 }
 
 async function findITunesArtwork(personaName: string, queryTokens: string[]): Promise<string | null> {
-  const response = await fetch(
+  const response = await safeFetch(
     `https://itunes.apple.com/search?term=${encodeURIComponent(personaName)}&media=podcast&limit=12`,
     { cache: "no-store" }
   );

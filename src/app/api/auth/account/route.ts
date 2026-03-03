@@ -3,6 +3,7 @@ import { getCurrentUser } from "@/lib/auth/server";
 import { deleteUser } from "@/lib/auth/local-users";
 import { SESSION_COOKIE } from "@/lib/auth/session";
 import { deleteOracleUserData } from "@/lib/db/oracle";
+import { clearCookieOptions } from "@/lib/security/cookie-options";
 
 export async function DELETE() {
   const user = await getCurrentUser();
@@ -13,13 +14,7 @@ export async function DELETE() {
     await deleteUser(user.id);
 
     const response = NextResponse.json({ success: true });
-    response.cookies.set(SESSION_COOKIE, "", {
-      httpOnly: true,
-      sameSite: "lax",
-      secure: process.env.NODE_ENV === "production",
-      path: "/",
-      maxAge: 0,
-    });
+    response.cookies.set(SESSION_COOKIE, "", clearCookieOptions());
     return response;
   } catch (error) {
     const message = error instanceof Error ? error.message : "Failed to delete account";
