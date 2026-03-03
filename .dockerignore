@@ -1,0 +1,12 @@
+.git
+.gitignore
+.next
+node_modules
+npm-debug.log*
+.env*
+.DS_Store
+README.md
+oracle
+supabase
+original-generate-context.txt
+tsconfig.tsbuildinfo
