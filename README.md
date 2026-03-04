@@ -12,7 +12,7 @@ TalkTo lets users:
 
 ## Current Container Images
 
-Published in OCIR:
+Published in GHCR (public):
 - `ghcr.io/detailtech/os-talkto:x86-amd64-selftls`
 - `ghcr.io/detailtech/os-talkto:arm64-selftls`
 
@@ -29,7 +29,7 @@ These images support optional self-signed TLS at runtime via `ENABLE_SELF_SIGNED
 ### Prerequisites
 - Node.js 20+
 - npm
-- Oracle Autonomous Database (walletless TCPS access or wallet-based config)
+- Oracle Autonomous Database (walletless TCPS)
 
 ### Environment
 Create `.env.local` from `.env.local.example` and set required values:
@@ -38,6 +38,12 @@ Create `.env.local` from `.env.local.example` and set required values:
 - `ORACLE_USER`
 - `ORACLE_PASSWORD`
 - `ORACLE_CONNECT_STRING`
+
+Generate secrets:
+```bash
+openssl rand -hex 32  # AUTH_SECRET
+openssl rand -hex 32  # ENCRYPTION_KEY
+```
 
 ### Run
 ```bash

@@ -3,29 +3,19 @@
 This guide walks through deploying TalkTo on OCI Free Tier using:
 - Autonomous Database (ADB)
 - One Compute VM with Podman
-- OCIR image pull
+- public GHCR image pull
 
 ## 1) Create Autonomous Database (ADB)
 
 1. In OCI Console, create an Autonomous Database.
-2. Note values:
-   - Database password
-   - Service name (for example: `..._low.adb.oraclecloud.com`)
-3. Ensure network access policy allows your compute VM to connect.
+2. In ADB, configure network access to allow walletless/client connections from your VM path.
+3. In the ADB details page, click **Database Connection** (or **Connections**) and copy the walletless connect string for your target service.
+4. Note database username/password.
 
-### Recommended connect string (walletless TCPS)
+### Connect String
 
-Use one line, no wrapping quotes:
-
-```text
-adb.us-ashburn-1.oraclecloud.com:1522/<SERVICE_NAME>?protocol=tcps&ssl_server_dn_match=yes&connect_timeout=15&transport_connect_timeout=3&retry_count=2&retry_delay=2
-```
-
-Example service names:
-- `<db>_low.adb.oraclecloud.com`
-- `<db>_high.adb.oraclecloud.com`
-
-If you use a TNS alias only (like `_high`) without descriptor, you need wallet + `tnsnames.ora` + `TNS_ADMIN`.
+Use the exact walletless connect string copied from the OCI Console connection panel.
+Do not wrap it in additional quotes in env files.
 
 ## 2) Create Compute Instance
 
@@ -57,13 +47,7 @@ Check active zone:
 sudo firewall-cmd --get-active-zones
 ```
 
-## 4) Login to OCIR and Pull Image
-
-```bash
-podman login ghcr.io
-# Username: <tenancy-namespace>/<oci-username>
-# Password: <OCI auth token>
-```
+## 4) Pull Public Image from GHCR
 
 Choose one image tag:
 - x86: `ghcr.io/detailtech/os-talkto:x86-amd64-selftls`
@@ -93,11 +77,18 @@ LOCAL_ADMIN_PASSWORD=<strong-password>
 
 ORACLE_USER=ADMIN
 ORACLE_PASSWORD=<adb-admin-or-app-user-password>
-ORACLE_CONNECT_STRING=adb.us-ashburn-1.oraclecloud.com:1522/<SERVICE_NAME>?protocol=tcps&ssl_server_dn_match=yes&connect_timeout=15&transport_connect_timeout=3&retry_count=2&retry_delay=2
+ORACLE_CONNECT_STRING=<paste walletless connect string from ADB Connections panel>
 ```
 
 Important:
 - Do not wrap `ORACLE_CONNECT_STRING` in quotes in `talkto.env`.
+
+Generate secrets:
+
+```bash
+openssl rand -hex 32  # AUTH_SECRET
+openssl rand -hex 32  # ENCRYPTION_KEY
+```
 
 ## 6) Run Container
 

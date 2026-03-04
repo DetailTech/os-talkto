@@ -18,20 +18,8 @@ npm -v
 ## 2) Set Up Oracle Autonomous Database
 
 1. Create/identify an ADB instance in OCI.
-2. Confirm network ACL/security rules allow your workstation egress to ADB.
-3. Choose service name (`_low` recommended for initial setup).
-
-Recommended walletless connect string format:
-
-```text
-adb.us-ashburn-1.oraclecloud.com:1522/<SERVICE_NAME>?protocol=tcps&ssl_server_dn_match=yes&connect_timeout=15&transport_connect_timeout=3&retry_count=2&retry_delay=2
-```
-
-Example `<SERVICE_NAME>`:
-
-```text
-mrj6p3vkk4ramuu_adbtalkto_low.adb.oraclecloud.com
-```
+2. Configure ADB network access to allow walletless/client connections from your workstation path.
+3. In ADB details, click **Database Connection** (or **Connections**) and copy the walletless connect string for the service you want to use.
 
 ## 3) Configure Local Environment
 
@@ -57,14 +45,14 @@ COOKIE_SECURE=false
 
 ORACLE_USER=ADMIN
 ORACLE_PASSWORD=<adb-password>
-ORACLE_CONNECT_STRING=adb.us-ashburn-1.oraclecloud.com:1522/<SERVICE_NAME>?protocol=tcps&ssl_server_dn_match=yes&connect_timeout=15&transport_connect_timeout=3&retry_count=2&retry_delay=2
+ORACLE_CONNECT_STRING=<paste walletless connect string from ADB Connections panel>
 ```
 
 Generate secrets:
 
 ```bash
-openssl rand -hex 32
-openssl rand -hex 32
+openssl rand -hex 32  # ENCRYPTION_KEY
+openssl rand -hex 32  # AUTH_SECRET
 ```
 
 Important:
@@ -88,7 +76,7 @@ Open:
 ## 6) Common Errors
 
 - `NJS-516 no configuration directory...`:
-  - Connect string is alias-like or malformed; use full walletless connect string.
+  - Connect string is alias-like, quoted, or malformed; use exact walletless string copied from ADB Connections.
 - `NJS-040 queueTimeout`:
   - DB connectivity/session issue (ACL, password, service name, routing).
 - Login appears successful but session not sticking:
