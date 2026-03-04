@@ -3,14 +3,22 @@ import { NextResponse, type NextRequest } from "next/server";
 const STATE_CHANGING_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 
 function sameOrigin(request: NextRequest): boolean {
-  const expected = request.nextUrl.origin;
+  const expectedUrl = request.nextUrl;
+  const expectedHost = expectedUrl.host;
   const origin = request.headers.get("origin");
-  if (origin) return origin === expected;
+  if (origin) {
+    try {
+      const originUrl = new URL(origin);
+      return originUrl.host === expectedHost;
+    } catch {
+      return false;
+    }
+  }
 
   const referer = request.headers.get("referer");
   if (referer) {
     try {
-      return new URL(referer).origin === expected;
+      return new URL(referer).host === expectedHost;
     } catch {
       return false;
     }
