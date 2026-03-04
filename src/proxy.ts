@@ -3,13 +3,15 @@ import { NextResponse, type NextRequest } from "next/server";
 const STATE_CHANGING_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 
 function sameOrigin(request: NextRequest): boolean {
-  const expectedUrl = request.nextUrl;
-  const expectedHost = expectedUrl.host;
+  const expectedHost = (request.headers.get("x-forwarded-host") || request.headers.get("host") || "")
+    .trim()
+    .toLowerCase();
+  if (!expectedHost) return false;
   const origin = request.headers.get("origin");
   if (origin) {
     try {
       const originUrl = new URL(origin);
-      return originUrl.host === expectedHost;
+      return originUrl.host.toLowerCase() === expectedHost;
     } catch {
       return false;
     }
@@ -18,7 +20,7 @@ function sameOrigin(request: NextRequest): boolean {
   const referer = request.headers.get("referer");
   if (referer) {
     try {
-      return new URL(referer).host === expectedHost;
+      return new URL(referer).host.toLowerCase() === expectedHost;
     } catch {
       return false;
     }
