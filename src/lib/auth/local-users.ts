@@ -62,7 +62,12 @@ export async function ensureBootstrapAdmin(): Promise<void> {
     password,
     role: "admin",
   });
-  await ensureDefaultUserSettings(createdUser.id);
+  try {
+    await ensureDefaultUserSettings(createdUser.id);
+  } catch (error) {
+    // Avoid blocking auth bootstrap if Oracle settings provisioning is temporarily unavailable.
+    console.error("Bootstrap user settings provisioning failed", error);
+  }
 }
 
 export async function listUsers(): Promise<LocalUser[]> {

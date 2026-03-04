@@ -77,7 +77,11 @@ export async function GET(request: NextRequest) {
     }
 
     const user = await upsertOidcUser(claims.email);
-    await ensureDefaultUserSettings(user.id);
+    try {
+      await ensureDefaultUserSettings(user.id);
+    } catch (error) {
+      console.error("OCI user settings provisioning failed", error);
+    }
 
     const token = createSessionToken({
       sub: user.id,

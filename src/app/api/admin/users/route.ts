@@ -42,7 +42,11 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Email and password are required" }, { status: 400 });
     }
     const user = await createUser({ email, password, role: role === "admin" ? "admin" : "user" });
-    await ensureDefaultUserSettings(user.id);
+    try {
+      await ensureDefaultUserSettings(user.id);
+    } catch (error) {
+      console.error("Admin create user settings provisioning failed", error);
+    }
     return NextResponse.json({
       user: {
         id: user.id,

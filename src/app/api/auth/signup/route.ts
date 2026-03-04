@@ -40,7 +40,11 @@ export async function POST(request: Request) {
     const existingUsers = await listUsers();
     const role = existingUsers.length === 0 ? "admin" : "user";
     const user = await createUser({ email, password, role });
-    await ensureDefaultUserSettings(user.id);
+    try {
+      await ensureDefaultUserSettings(user.id);
+    } catch (error) {
+      console.error("Signup user settings provisioning failed", error);
+    }
 
     const token = createSessionToken({
       sub: user.id,
