@@ -68,6 +68,10 @@ npm run dev
 Open:
 - `http://localhost:3000/login`
 
+Reference UI screenshot:
+
+![AI setup screen](../screens/ai%20setup.png)
+
 ## 5) First Login Behavior
 
 - If `ALLOW_SIGNUP=true`, create first account via `/signup`.

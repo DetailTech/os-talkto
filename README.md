@@ -10,6 +10,20 @@ TalkTo lets users:
 - Chat with one or more personas with selectable response tones
 - Manage provider/model settings and admin workflows
 
+## Screenshots
+
+### AI Setup
+![AI provider setup](screens/ai%20setup.png)
+
+### Add Personas
+![Add personas workflow](screens/add%20personas.png)
+
+### RAG Ingestion
+![RAG ingest progress](screens/rag%20ingest.png)
+
+### Group Chat
+![Group chat experience](screens/group%20chat.png)
+
 ## Current Container Images
 
 Published in GHCR (public):

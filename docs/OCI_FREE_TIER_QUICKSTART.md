@@ -115,6 +115,10 @@ Browser:
 - `https://<public-ip>:3000/login`
 - Accept self-signed cert warning
 
+Reference UI screenshot:
+
+![AI setup screen](../screens/ai%20setup.png)
+
 ## 8) OCI Networking Checklist
 
 If external access fails:
